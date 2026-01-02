@@ -142,7 +142,6 @@
     }
     .ghost:hover{border-color:#cfd3d7}
 
-    /* Modal */
     .modalBack{
       position:fixed;inset:0;background:rgba(0,0,0,.35);
       display:none;align-items:center;justify-content:center;padding:16px;
@@ -257,7 +256,6 @@
   Dirección de Planeación Institucional · DIF Jalisco
 </footer>
 
-<!-- MODAL configuración plataformas -->
 <div class="modalBack" id="modalBack">
   <div class="modal">
     <div class="modalHead">
@@ -273,338 +271,139 @@
 </div>
 
 <script>
-  /***************
-   * 1) LOGO desde el repo (prueba varias rutas por si hay espacios)
-   ***************/
-  (function loadLogo(){
-    const candidates = [
-      "logo dif.jpg",
-      "logo dif .jpg",
-      "logo%20dif.jpg",
-      "logo%20dif%20.jpg",
-      "logo%20dif%20.jpg".replaceAll(" ", "%20")
-    ];
-    const img = document.getElementById("logo");
+/* === LOGO === */
+(function loadLogo(){
+  const img=document.getElementById("logo");
+  const src="logo dif.jpg";
+  const t=new Image();
+  t.onload=()=>{img.src=src;img.style.display="block";};
+  t.src=src;
+})();
 
-    let i = 0;
-    function tryNext(){
-      if(i >= candidates.length) return;
-      const src = candidates[i++];
-      const test = new Image();
-      test.onload = () => { img.src = src; img.style.display = "block"; };
-      test.onerror = tryNext;
-      test.src = src;
-    }
-    tryNext();
-  })();
+/* === EXCEL === */
+const XLSX_FILE="Control_Reportes_SEDIF_2025.xlsx";
+const MESES_ORDEN=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const SEXENIO=["2025","2026","2027","2028","2029","2030"];
 
-  /***************
-   * 2) Cargar Excel desde el repo (NO desde el chat)
-   ***************/
-  const XLSX_FILE_CANDIDATES = [
-    "Control_Reportes_SEDIF_2025.xlsx",
-    "Control_Reportes_SEDIF_2025.xlsx".replaceAll(" ", "%20")
+let DATA=[],PLATAFORMAS=[],AREAS=[],AREA_ACTUAL=null;
+
+const selMes=document.getElementById("selMes");
+const selAnio=document.getElementById("selAnio");
+const lblArea=document.getElementById("lblArea");
+const areaBtns=document.getElementById("areaBtns");
+const panelTabla=document.getElementById("panelTabla");
+const tbody=document.getElementById("tbody");
+const subtituloTabla=document.getElementById("subtituloTabla");
+
+const kpiCompletados=document.getElementById("kpiCompletados");
+const kpiPendientes=document.getElementById("kpiPendientes");
+const kpiVencidos=document.getElementById("kpiVencidos");
+const kpiMes=document.getElementById("kpiMes");
+
+/* === STORAGE === */
+const keyRow=id=>"reporte_row_"+id;
+const keyPlat=n=>"platform_url_"+n;
+
+const getRow=id=>JSON.parse(localStorage.getItem(keyRow(id))||"null");
+const setRow=(id,v)=>localStorage.setItem(keyRow(id),JSON.stringify(v));
+const getPlat=n=>localStorage.getItem(keyPlat(n))||"";
+const setPlat=(n,v)=>localStorage.setItem(keyPlat(n),(v||"").trim());
+
+const parseFecha=s=>{
+  if(!s)return null;
+  const m=String(s).replaceAll("-","/").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m)return null;
+  return new Date(+m[3],+m[2]-1,+m[1],23,59,59);
+};
+const hoy=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);};
+const isComp=e=>String(e||"").toLowerCase().includes("complet");
+const isVenc=(r,e)=>{const f=parseFecha(r.Fecha_Limite);return f && !isComp(e) && f<hoy();};
+const esc=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+
+async function loadExcel(){
+  const r=await fetch(XLSX_FILE);
+  const b=await r.arrayBuffer();
+  const wb=XLSX.read(b,{type:"array"});
+  const sh=wb.Sheets["BASE GENERAL"];
+  DATA=XLSX.utils.sheet_to_json(sh,{defval:""}).map((r,i)=>({__id:i+1,...r}));
+
+  selMes.innerHTML=MESES_ORDEN.map(m=>`<option>${m}</option>`).join("");
+  selAnio.innerHTML=SEXENIO.map(a=>`<option>${a}</option>`).join("");
+  selAnio.value="2025";
+
+  const orden=[
+    "Dirección de Planeación Institucional",
+    "Departamento de Planeación y Proyectos",
+    "Departamento de Seguimiento y Evaluación",
+    "Departamento de Capacitación e Investigación",
+    "Departamento de Desarrollo Institucional"
   ];
+  AREAS=orden.filter(a=>DATA.some(r=>r["Área"]===a));
+  areaBtns.innerHTML=AREAS.map(a=>`<button class="btn" data-a="${a}">${a==="Dirección de Planeación Institucional"?"Dirección de Planeación":a}</button>`).join("");
 
-  const MESES_ORDEN = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-
-  let DATA = [];
-  let PLATAFORMAS = [];
-  let AREAS = [];
-  let AREA_ACTUAL = null;
-
-  const selMes = document.getElementById("selMes");
-  const selAnio = document.getElementById("selAnio");
-  const lblArea = document.getElementById("lblArea");
-  const areaBtns = document.getElementById("areaBtns");
-  const panelTabla = document.getElementById("panelTabla");
-  const tbody = document.getElementById("tbody");
-  const subtituloTabla = document.getElementById("subtituloTabla");
-
-  const kpiCompletados = document.getElementById("kpiCompletados");
-  const kpiPendientes = document.getElementById("kpiPendientes");
-  const kpiVencidos = document.getElementById("kpiVencidos");
-  const kpiMes = document.getElementById("kpiMes");
-
-  function storageKeyRow(id){ return "reporte_row_" + id; }
-  function storageKeyPlatform(name){ return "platform_url_" + name; }
-
-  function getSavedRow(id){
-    try{
-      const raw = localStorage.getItem(storageKeyRow(id));
-      return raw ? JSON.parse(raw) : null;
-    }catch(e){ return null; }
-  }
-  function setSavedRow(id, payload){
-    localStorage.setItem(storageKeyRow(id), JSON.stringify(payload));
-  }
-
-  function getPlatformUrl(name){
-    return localStorage.getItem(storageKeyPlatform(name)) || "";
-  }
-  function setPlatformUrl(name, url){
-    localStorage.setItem(storageKeyPlatform(name), (url||"").trim());
-  }
-
-  function parseFechaDDMMYYYY(s){
-    if(!s) return null;
-    const t = String(s).trim().replaceAll("-", "/");
-    const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if(!m) return null;
-    const dd = parseInt(m[1],10);
-    const mm = parseInt(m[2],10)-1;
-    const yy = parseInt(m[3],10);
-    const d = new Date(yy, mm, dd, 23, 59, 59);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-  function hoy(){
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
-  }
-  function isCompletado(estatus){
-    return String(estatus||"").toLowerCase().includes("complet");
-  }
-  function isVencido(row, estatus){
-    const d = parseFechaDDMMYYYY(row.Fecha_Limite);
-    if(!d) return false;
-    if(isCompletado(estatus)) return false;
-    return d.getTime() < hoy().getTime();
-  }
-  function escapeHtml(s){
-    return String(s ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-
-  async function fetchExcel(){
-    for(const file of XLSX_FILE_CANDIDATES){
-      try{
-        const res = await fetch(file);
-        if(!res.ok) continue;
-        const buf = await res.arrayBuffer();
-        const wb = XLSX.read(buf, {type:"array"});
-        const sheet = wb.Sheets["BASE GENERAL"];
-        if(!sheet) throw new Error("No existe hoja BASE GENERAL");
-        const json = XLSX.utils.sheet_to_json(sheet, {defval:""});
-        // id estable por orden
-        DATA = json.map((r, idx) => ({__id: idx+1, ...r}));
-
-        // áreas
-        const a = Array.from(new Set(DATA.map(r => String(r["Área"]||"").trim()).filter(Boolean)));
-        // orden institucional (como tú lo pediste)
-        const orden = [
-          "Dirección de Planeación Institucional",
-          "Departamento de Planeación y Proyectos",
-          "Departamento de Seguimiento y Evaluación",
-          "Departamento de Capacitación e Investigación",
-          "Departamento de Desarrollo Institucional"
-        ];
-        AREAS = orden.filter(x => a.includes(x));
-
-        // plataformas
-        PLATAFORMAS = Array.from(new Set(DATA.map(r => String(r["Sistema_Plataforma"]||"").trim()).filter(Boolean))).sort();
-
-        // meses
-        const meses = Array.from(new Set(DATA.map(r => String(r["Mes"]||"").trim()).filter(Boolean)));
-        const mesesOrdenados = MESES_ORDEN.filter(m => meses.includes(m));
-        selMes.innerHTML = mesesOrdenados.map(m => `<option value="${m}">${m}</option>`).join("");
-        // año
-        const anios = Array.from(new Set(DATA.map(r => String(r["Año"]||"").trim()).filter(Boolean))).sort();
-        selAnio.innerHTML = anios.map(y => `<option value="${y}">${y}</option>`).join("");
-
-        // default mes actual si existe
-        const mesNow = MESES_ORDEN[new Date().getMonth()];
-        if(mesesOrdenados.includes(mesNow)) selMes.value = mesNow;
-
-        // botones áreas
-        areaBtns.innerHTML = AREAS.map(a => `<button class="btn" data-area="${escapeHtml(a)}">${escapeHtml(a === "Dirección de Planeación Institucional" ? "Dirección de Planeación" : a)}</button>`).join("");
-        document.querySelectorAll(".btn[data-area]").forEach(b=>{
-          b.addEventListener("click", ()=>{
-            AREA_ACTUAL = b.getAttribute("data-area");
-            lblArea.innerHTML = `<strong>${escapeHtml(AREA_ACTUAL)}</strong>`;
-            panelTabla.style.display = "block";
-            renderTabla();
-            renderKPIs();
-            panelTabla.scrollIntoView({behavior:"smooth", block:"start"});
-          });
-        });
-
-        // listeners filtros
-        selMes.addEventListener("change", ()=>{ renderTabla(); renderKPIs(); });
-        selAnio.addEventListener("change", ()=>{ renderTabla(); renderKPIs(); });
-
-        renderKPIs();
-        return;
-      }catch(e){ /* intenta siguiente */ }
-    }
-
-    alert("No pude cargar el Excel. Verifica que el archivo se llame exactamente: Control_Reportes_SEDIF_2025.xlsx");
-  }
-
-  function filasMesAnio(){
-    const mes = selMes.value;
-    const anio = selAnio.value;
-    return DATA.filter(r => String(r["Mes"]||"").trim()===mes && String(r["Año"]||"").trim()===anio);
-  }
-
-  function renderKPIs(){
-    const mes = selMes.value;
-    const anio = selAnio.value;
-    const rows = filasMesAnio();
-
-    let comp=0, pend=0, venc=0;
-    for(const r of rows){
-      const saved = getSavedRow(r.__id);
-      const estatus = saved?.estatus || String(r["Estatus"]||"Pendiente") || "Pendiente";
-      if(isCompletado(estatus)) comp++; else pend++;
-      if(isVencido(r, estatus)) venc++;
-    }
-
-    kpiCompletados.textContent = comp;
-    kpiPendientes.textContent = pend;
-    kpiVencidos.textContent = venc;
-    kpiMes.textContent = `${mes} / ${anio}`;
-  }
-
-  function renderTabla(){
-    if(!AREA_ACTUAL){ return; }
-
-    const mes = selMes.value;
-    const anio = selAnio.value;
-
-    const rows = DATA
-      .filter(r => String(r["Mes"]||"").trim()===mes)
-      .filter(r => String(r["Año"]||"").trim()===anio)
-      .filter(r => String(r["Área"]||"").trim()===String(AREA_ACTUAL).trim());
-
-    subtituloTabla.textContent = `${AREA_ACTUAL} · ${mes} · ${anio} · Registros: ${rows.length}`;
-
-    tbody.innerHTML = rows.map(r=>{
-      const saved = getSavedRow(r.__id);
-      const estatus = saved?.estatus || String(r["Estatus"]||"Pendiente") || "Pendiente";
-      const linkVerif = saved?.linkVerif || "";
-      const plataforma = String(r["Sistema_Plataforma"]||"").trim() || "—";
-      const plataformaUrl = getPlatformUrl(plataforma);
-
-      const vencido = isVencido(r, estatus);
-      const fecha = String(r["Fecha_Limite"]||"—");
-      const badge = vencido ? ` <span class="badge-bad">(Vencido)</span>` : "";
-
-      return `
-        <tr>
-          <td>
-            <div style="font-weight:900">${escapeHtml(r["Actividad"]||"—")}</div>
-            <div class="mini">${escapeHtml(r["Nivel_Gobierno"]||"")}</div>
-          </td>
-          <td>${escapeHtml(r["Tipo_Reporte"]||"—")}</td>
-          <td>
-            <div style="font-weight:900">${escapeHtml(plataforma)}</div>
-            <div class="mini">Impacto: ${escapeHtml(r["Impacto"]||"")}</div>
-          </td>
-          <td>${escapeHtml(r["Periodicidad"]||"—")}</td>
-          <td>${escapeHtml(fecha)}${badge}</td>
-
-          <td>
-            <select class="estado" data-id="${r.__id}">
-              <option value="Pendiente" ${String(estatus)==="Pendiente" ? "selected":""}>Pendiente</option>
-              <option value="Completado" ${String(estatus)==="Completado" ? "selected":""}>Completado</option>
-            </select>
-          </td>
-
-          <td>
-            <input class="link linkVerif" data-id="${r.__id}" value="${escapeHtml(linkVerif)}"
-              placeholder="Pega el link de verificación (https://...)" />
-            <div class="mini">Este link es la evidencia del reporte.</div>
-          </td>
-
-          <td>
-            <button class="open" data-plataforma="${escapeHtml(plataforma)}" ${plataformaUrl ? "" : "title='Configura el enlace en el botón de arriba'"} >
-              ${plataformaUrl ? "Abrir" : "Configurar"}
-            </button>
-          </td>
-
-          <td>
-            <button class="save" data-id="${r.__id}">Guardar</button>
-          </td>
-        </tr>
-      `;
-    }).join("");
-
-    // guardar fila
-    tbody.querySelectorAll(".save").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const id = parseInt(btn.getAttribute("data-id"),10);
-        const est = tbody.querySelector(`.estado[data-id="${id}"]`)?.value || "Pendiente";
-        const link = tbody.querySelector(`.linkVerif[data-id="${id}"]`)?.value.trim() || "";
-        setSavedRow(id, {estatus: est, linkVerif: link, updatedAt: new Date().toISOString()});
-        btn.textContent = "Guardado ✓";
-        setTimeout(()=> btn.textContent="Guardar", 900);
-        renderKPIs();
-        renderTabla();
-      });
-    });
-
-    // abrir plataforma
-    tbody.querySelectorAll(".open").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const p = btn.getAttribute("data-plataforma") || "";
-        const url = getPlatformUrl(p);
-        if(!url){
-          abrirConfig(true);
-          return;
-        }
-        window.open(url, "_blank");
-      });
-    });
-  }
-
-  /***************
-   * 3) Modal configuración plataformas (porque el Excel NO trae URLs)
-   ***************/
-  const modalBack = document.getElementById("modalBack");
-  const modalBody = document.getElementById("modalBody");
-  const btnConfig = document.getElementById("btnConfig");
-  const modalClose = document.getElementById("modalClose");
-  const modalCancel = document.getElementById("modalCancel");
-  const modalSave = document.getElementById("modalSave");
-
-  function abrirConfig(scrollTop=false){
-    modalBody.innerHTML = PLATAFORMAS.map(p=>{
-      const url = getPlatformUrl(p);
-      return `
-        <div class="modalRow">
-          <div><b>${escapeHtml(p)}</b><div class="mini">Enlace a la plataforma (una vez)</div></div>
-          <div><input data-pl="${escapeHtml(p)}" value="${escapeHtml(url)}" placeholder="https://..." style="width:100%"></div>
-        </div>
-      `;
-    }).join("");
-    modalBack.style.display = "flex";
-    if(scrollTop) modalBody.scrollTop = 0;
-  }
-  function cerrarConfig(){ modalBack.style.display="none"; }
-
-  btnConfig.addEventListener("click", ()=>abrirConfig());
-  modalClose.addEventListener("click", cerrarConfig);
-  modalCancel.addEventListener("click", cerrarConfig);
-  modalBack.addEventListener("click", (e)=>{ if(e.target===modalBack) cerrarConfig(); });
-
-  modalSave.addEventListener("click", ()=>{
-    modalBody.querySelectorAll("input[data-pl]").forEach(inp=>{
-      const p = inp.getAttribute("data-pl");
-      const url = inp.value.trim();
-      setPlatformUrl(p, url);
-    });
-    cerrarConfig();
-    renderTabla();
+  document.querySelectorAll(".btn[data-a]").forEach(b=>b.onclick=()=>{
+    AREA_ACTUAL=b.dataset.a;
+    lblArea.innerHTML=`<strong>${AREA_ACTUAL}</strong>`;
+    panelTabla.style.display="block";
+    render();
   });
 
-  // GO
-  fetchExcel();
-</script>
+  selMes.onchange=selAnio.onchange=render;
+  render();
+}
 
+function filas(){
+  const mes=selMes.value;
+  const anio=selAnio.value;
+  const base=DATA.some(r=>String(r["Año"])===anio)?anio:"2025";
+  return DATA.filter(r=>r["Mes"]===mes && String(r["Año"])===base && r["Área"]===AREA_ACTUAL);
+}
+
+function render(){
+  if(!AREA_ACTUAL)return;
+  const rows=filas();
+  subtituloTabla.textContent=`${AREA_ACTUAL} · ${selMes.value} · ${selAnio.value}`;
+  let c=0,p=0,v=0;
+  tbody.innerHTML=rows.map(r=>{
+    const s=getRow(r.__id)?.estatus||r.Estatus||"Pendiente";
+    if(isComp(s))c++;else p++;
+    if(isVenc(r,s))v++;
+    return `
+      <tr>
+        <td><b>${esc(r.Actividad)}</b></td>
+        <td>${esc(r.Tipo_Reporte)}</td>
+        <td>${esc(r.Sistema_Plataforma)}</td>
+        <td>${esc(r.Periodicidad)}</td>
+        <td>${esc(r.Fecha_Limite)}</td>
+        <td>
+          <select class="estado" data-i="${r.__id}">
+            <option ${s==="Pendiente"?"selected":""}>Pendiente</option>
+            <option ${s==="Completado"?"selected":""}>Completado</option>
+          </select>
+        </td>
+        <td><input class="link" data-i="${r.__id}" value="${esc(getRow(r.__id)?.linkVerif||"")}"></td>
+        <td><button class="save" data-i="${r.__id}">Guardar</button></td>
+      </tr>`;
+  }).join("");
+
+  kpiCompletados.textContent=c;
+  kpiPendientes.textContent=p;
+  kpiVencidos.textContent=v;
+  kpiMes.textContent=`${selMes.value} / ${selAnio.value}`;
+
+  document.querySelectorAll(".save").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.i;
+    const e=document.querySelector(`.estado[data-i="${id}"]`).value;
+    const l=document.querySelector(`.link[data-i="${id}"]`).value;
+    setRow(id,{estatus:e,linkVerif:l});
+    render();
+  });
+}
+
+loadExcel();
+</script>
 </body>
 </html>
+
+
 
