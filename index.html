@@ -251,6 +251,9 @@ tr.enTiempo td{
       </div>
       <div class="mini">Guardado local (este navegador).</div>
     </div>
+    <button class="ghost" id="btnExportExcel">
+  📤 Exportar a Excel
+</button>
 
     <div class="tablaWrap">
       <table>
@@ -587,6 +590,47 @@ function render(){
 }
 
 loadExcel();
+/* === EXPORTAR A EXCEL (MES / AÑO / ÁREA ACTUAL) === */
+document.getElementById("btnExportExcel")?.addEventListener("click", () => {
+  if (!AREA_ACTUAL) {
+    alert("Selecciona un área primero.");
+    return;
+  }
+
+  const rows = filas();
+  if (!rows.length) {
+    alert("No hay registros para exportar.");
+    return;
+  }
+
+  const data = rows.map(r => {
+    const saved = getRow(r.__id) || {};
+    return {
+      "Área": r["Área"],
+      "Mes": r["Mes"],
+      "Año": r["Año"],
+      "Actividad": r["Actividad"],
+      "Tipo": r["Tipo_Reporte"],
+      "Plataforma": r["Sistema_Plataforma"],
+      "Periodicidad": r["Periodicidad"],
+      "Fecha límite": formatFechaLimite(
+        r["Fecha_Limite"] ?? r.Fecha_Limite,
+        selAnio.value
+      ),
+      "Estatus": saved.estatus || r.Estatus || "Pendiente",
+      "Link verificación": saved.linkVerif || ""
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+
+  const nombre = `Reporte_${AREA_ACTUAL}_${selMes.value}_${selAnio.value}.xlsx`
+    .replaceAll(" ", "_");
+
+  XLSX.writeFile(wb, nombre);
+});
 </script>
 </body>
 </html>
