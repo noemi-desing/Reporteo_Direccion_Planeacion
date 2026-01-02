@@ -1,160 +1,608 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Sistema de Reporteo – Dirección de Planeación Institucional</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Sistema de Reporteo – DIF Jalisco</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Lee Excel desde el mismo repositorio (GitHub Pages) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     :root{
       --naranja:#f26a21;
       --gris:#6b6f73;
       --fondo:#f4f6f8;
+      --blanco:#ffffff;
+      --borde:#e6e8eb;
+      --sombra:0 2px 10px rgba(0,0,0,.08);
+      --ok:#0b7a2a;
+      --bad:#b91c1c;
     }
+
     *{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
-    body{margin:0;background:var(--fondo);color:#333}
+    body{margin:0;background:var(--fondo);color:#222}
 
     header{
-      background:#fff;
-      padding:15px 30px;
+      background:var(--blanco);
+      border-bottom:4px solid var(--naranja);
+      padding:16px 20px;
       display:flex;
       align-items:center;
-      justify-content:space-between;
-      border-bottom:4px solid var(--naranja);
+      gap:14px;
     }
-    header img{height:55px}
-    header h1{
-      margin:0;
-      text-align:center;
-      color:var(--gris);
-      font-size:20px;
-      line-height:1.3;
-      flex:1;
+    header img{height:56px; display:none;}
+    header .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+    header .t h1{margin:0;font-size:20px;color:var(--gris);line-height:1.2}
+    header .t small{color:#555;font-size:13px}
+
+    main{max-width:1200px;margin:0 auto;padding:18px}
+
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .panel{
+      background:var(--blanco);
+      border:1px solid var(--borde);
+      border-radius:12px;
+      box-shadow:var(--sombra);
+      padding:14px;
     }
 
-    main{max-width:1200px;margin:auto;padding:30px}
-
-    .indicadores{
+    .kpis{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:20px;
-      margin-bottom:40px;
+      gap:12px;
+      margin-bottom:12px;
     }
-    .card{
-      background:#fff;
-      border-radius:10px;
-      padding:22px;
+    .kpi{
+      background:var(--blanco);
+      border:1px solid var(--borde);
+      border-radius:12px;
+      box-shadow:var(--sombra);
+      padding:14px;
       text-align:center;
-      box-shadow:0 2px 6px rgba(0,0,0,.1);
     }
-    .card h2{margin:0;font-size:32px;color:var(--naranja)}
-    .card p{margin-top:10px;font-weight:bold;color:var(--gris)}
+    .kpi .n{font-size:34px;font-weight:900;color:var(--naranja);line-height:1;margin:0}
+    .kpi .l{margin-top:8px;font-weight:800;color:var(--gris)}
 
-    h3{color:var(--gris);margin-bottom:20px}
+    .topbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;background:#fff;border:1px solid var(--borde);
+      border-radius:999px;
+    }
+    select, input{
+      padding:8px 10px;border:1px solid var(--borde);
+      border-radius:10px;background:#fff;
+    }
+    .tag{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;border:1px solid var(--borde);border-radius:999px;
+      background:#fff;font-weight:800;color:var(--gris)
+    }
+    .tag strong{color:#111}
 
-    .botones{
+    .btns{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-      gap:20px;
+      gap:10px;
+      margin-top:10px;
     }
     .btn{
+      border:none;border-radius:12px;
+      padding:14px 12px;
+      cursor:pointer;
       background:var(--naranja);
       color:#fff;
-      border:none;
-      border-radius:12px;
-      padding:22px;
-      font-size:16px;
-      cursor:pointer;
-      transition:.3s;
-    }
-    .btn:hover{background:#d85617;transform:translateY(-2px)}
-
-    footer{
-      margin-top:50px;
-      padding:20px;
+      font-size:15px;
+      font-weight:900;
+      transition:.15s ease-in-out;
       text-align:center;
-      font-size:12px;
-      color:#777;
     }
+    .btn:hover{background:#d85617;transform:translateY(-1px)}
+    .btn:active{transform:translateY(0px)}
+
+    .sub{color:#666;font-size:12px;margin-top:8px}
+
+    .tablaWrap{overflow:auto;border:1px solid var(--borde);border-radius:12px;margin-top:10px}
+    table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;min-width:1100px}
+    thead th{
+      position:sticky;top:0;background:#fff;z-index:2;
+      border-bottom:1px solid var(--borde);
+      padding:10px;text-align:left;font-size:12px;color:var(--gris);white-space:nowrap;
+    }
+    tbody td{border-bottom:1px solid var(--borde);padding:10px;font-size:13px;vertical-align:top}
+    tbody tr:hover td{background:#fafafa}
+
+    .mini{font-size:12px;color:#666;margin-top:2px}
+
+    .estado{width:160px;font-weight:900}
+    .link{width:330px}
+    .save{
+      border:none;border-radius:10px;padding:10px 12px;cursor:pointer;
+      background:var(--gris);color:#fff;font-weight:900;white-space:nowrap;
+    }
+    .save:hover{background:#54575b}
+    .open{
+      border:none;border-radius:10px;padding:10px 12px;cursor:pointer;
+      background:#111;color:#fff;font-weight:900;white-space:nowrap;
+    }
+
+    .badge-ok{color:var(--ok);font-weight:900}
+    .badge-bad{color:var(--bad);font-weight:900}
+
+    .rightActions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .ghost{
+      border:1px solid var(--borde);
+      background:#fff;
+      border-radius:10px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-weight:900;
+      color:var(--gris);
+    }
+    .ghost:hover{border-color:#cfd3d7}
+
+    /* Modal */
+    .modalBack{
+      position:fixed;inset:0;background:rgba(0,0,0,.35);
+      display:none;align-items:center;justify-content:center;padding:16px;
+    }
+    .modal{
+      width:min(900px, 100%);
+      background:#fff;border-radius:14px;box-shadow:0 20px 70px rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding:14px 16px;border-bottom:1px solid var(--borde);
+      display:flex;justify-content:space-between;align-items:center;
+    }
+    .modalHead h3{margin:0;color:var(--gris)}
+    .modalBody{padding:14px 16px;max-height:70vh;overflow:auto}
+    .modalRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      padding:10px 0;
+      border-bottom:1px dashed #eee;
+      align-items:center;
+    }
+    .modalRow b{color:#111}
+    .modalFoot{padding:14px 16px;border-top:1px solid var(--borde);display:flex;gap:10px;justify-content:flex-end}
+    .x{border:none;background:transparent;font-size:22px;cursor:pointer;color:#777}
   </style>
 </head>
 
 <body>
-
 <header>
-  <img src="logo dif.jpg" alt="DIP Jalisco">
-  <h1>
-    Sistema de Reporteo<br>
-    Dirección de Planeación Institucional
-  </h1>
-  <img src="logo dif.jpg" alt="Gobierno de Jalisco">
+  <img id="logo" alt="DIF Jalisco">
+  <div class="t">
+    <h1>Sistema de Reporteo</h1>
+    <small>Dirección de Planeación Institucional · DIF Jalisco</small>
+  </div>
 </header>
 
 <main>
 
-  <!-- INDICADORES GENERALES (se alimentan del control de fichas) -->
-  <section class="indicadores">
-    <div class="card">
-      <h2>0</h2>
-      <p>Reportes Completados</p>
+  <!-- KPIs -->
+  <section class="kpis">
+    <div class="kpi"><p class="n" id="kpiCompletados">0</p><div class="l">Completados (mes)</div></div>
+    <div class="kpi"><p class="n" id="kpiPendientes">0</p><div class="l">Pendientes (mes)</div></div>
+    <div class="kpi"><p class="n" id="kpiVencidos">0</p><div class="l">Vencidos (mes)</div></div>
+    <div class="kpi"><p class="n" id="kpiMes">—</p><div class="l">Mes / Año</div></div>
+  </section>
+
+  <!-- Selección -->
+  <section class="panel">
+    <div class="topbar">
+      <div class="row">
+        <div class="pill">
+          <b style="color:var(--gris)">Mes</b>
+          <select id="selMes"></select>
+        </div>
+
+        <div class="pill">
+          <b style="color:var(--gris)">Año</b>
+          <select id="selAnio"></select>
+        </div>
+
+        <div class="tag">Área: <strong id="lblArea">—</strong></div>
+      </div>
+
+      <div class="rightActions">
+        <button class="ghost" id="btnConfig">Configurar enlaces de plataformas</button>
+      </div>
     </div>
-    <div class="card">
-      <h2>0</h2>
-      <p>Reportes Pendientes</p>
-    </div>
-    <div class="card">
-      <h2>0</h2>
-      <p>Reportes Vencidos</p>
-    </div>
-    <div class="card">
-      <h2>Mes Actual</h2>
-      <p>En curso</p>
+
+    <div class="btns" id="areaBtns"></div>
+
+    <div class="sub">
+      • Los botones <b>abren la tabla real</b> del Excel (hoja <b>BASE GENERAL</b>).<br>
+      • El usuario pega el <b>link de verificación</b> (evidencia) después de reportar.
     </div>
   </section>
 
-  <!-- BOTONES POR ÁREA (derivados de la base de datos) -->
-  <h3>Selecciona tu área para realizar el reporteo</h3>
+  <!-- Tabla -->
+  <section class="panel" id="panelTabla" style="display:none;margin-top:12px">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-weight:900;color:var(--gris)">Tabla de reporteo</div>
+        <div class="mini" id="subtituloTabla"></div>
+      </div>
+      <div class="mini">Guardado local (este navegador).</div>
+    </div>
 
-  <section class="botones">
-    <button class="btn" onclick="abrir('Dirección de Planeación')">
-      Dirección de Planeación
-    </button>
-
-    <button class="btn" onclick="abrir('Planeación y Proyectos')">
-      Departamento de Planeación y Proyectos
-    </button>
-
-    <button class="btn" onclick="abrir('Seguimiento y Evaluación')">
-      Departamento de Seguimiento y Evaluación
-    </button>
-
-    <button class="btn" onclick="abrir('Capacitación e Investigación')">
-      Departamento de Capacitación e Investigación
-    </button>
-
-    <button class="btn" onclick="abrir('Desarrollo Institucional')">
-      Departamento de Desarrollo Institucional
-    </button>
+    <div class="tablaWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Actividad</th>
+            <th>Tipo</th>
+            <th>Plataforma</th>
+            <th>Periodicidad</th>
+            <th>Fecha límite</th>
+            <th>Estatus</th>
+            <th>Link de verificación</th>
+            <th>Abrir plataforma</th>
+            <th>Guardar</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
   </section>
 
 </main>
 
-<footer>
-  Dirección de Planeación Institucional · DIP Jalisco
+<footer style="text-align:center;font-size:12px;color:#777;padding:18px">
+  Dirección de Planeación Institucional · DIF Jalisco
 </footer>
 
+<!-- MODAL configuración plataformas -->
+<div class="modalBack" id="modalBack">
+  <div class="modal">
+    <div class="modalHead">
+      <h3>Configurar enlaces de plataformas</h3>
+      <button class="x" id="modalClose">×</button>
+    </div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot">
+      <button class="ghost" id="modalCancel">Cancelar</button>
+      <button class="btn" id="modalSave" style="padding:10px 14px;border-radius:10px">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  function abrir(area){
-    alert(
-      "Área: " + area + "\n\n" +
-      "Aquí se mostrará:\n" +
-      "• Tipo de reporteo\n" +
-      "• Ficha correspondiente\n" +
-      "• Periodicidad (cuándo)\n" +
-      "• Plataforma (dónde reportar)\n\n" +
-      "Toda la lógica viene de la base de datos."
-    );
+  /***************
+   * 1) LOGO desde el repo (prueba varias rutas por si hay espacios)
+   ***************/
+  (function loadLogo(){
+    const candidates = [
+      "logo dif.jpg",
+      "logo dif .jpg",
+      "logo%20dif.jpg",
+      "logo%20dif%20.jpg",
+      "logo%20dif%20.jpg".replaceAll(" ", "%20")
+    ];
+    const img = document.getElementById("logo");
+
+    let i = 0;
+    function tryNext(){
+      if(i >= candidates.length) return;
+      const src = candidates[i++];
+      const test = new Image();
+      test.onload = () => { img.src = src; img.style.display = "block"; };
+      test.onerror = tryNext;
+      test.src = src;
+    }
+    tryNext();
+  })();
+
+  /***************
+   * 2) Cargar Excel desde el repo (NO desde el chat)
+   ***************/
+  const XLSX_FILE_CANDIDATES = [
+    "Control_Reportes_SEDIF_2025.xlsx",
+    "Control_Reportes_SEDIF_2025.xlsx".replaceAll(" ", "%20")
+  ];
+
+  const MESES_ORDEN = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+  let DATA = [];
+  let PLATAFORMAS = [];
+  let AREAS = [];
+  let AREA_ACTUAL = null;
+
+  const selMes = document.getElementById("selMes");
+  const selAnio = document.getElementById("selAnio");
+  const lblArea = document.getElementById("lblArea");
+  const areaBtns = document.getElementById("areaBtns");
+  const panelTabla = document.getElementById("panelTabla");
+  const tbody = document.getElementById("tbody");
+  const subtituloTabla = document.getElementById("subtituloTabla");
+
+  const kpiCompletados = document.getElementById("kpiCompletados");
+  const kpiPendientes = document.getElementById("kpiPendientes");
+  const kpiVencidos = document.getElementById("kpiVencidos");
+  const kpiMes = document.getElementById("kpiMes");
+
+  function storageKeyRow(id){ return "reporte_row_" + id; }
+  function storageKeyPlatform(name){ return "platform_url_" + name; }
+
+  function getSavedRow(id){
+    try{
+      const raw = localStorage.getItem(storageKeyRow(id));
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
   }
+  function setSavedRow(id, payload){
+    localStorage.setItem(storageKeyRow(id), JSON.stringify(payload));
+  }
+
+  function getPlatformUrl(name){
+    return localStorage.getItem(storageKeyPlatform(name)) || "";
+  }
+  function setPlatformUrl(name, url){
+    localStorage.setItem(storageKeyPlatform(name), (url||"").trim());
+  }
+
+  function parseFechaDDMMYYYY(s){
+    if(!s) return null;
+    const t = String(s).trim().replaceAll("-", "/");
+    const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(!m) return null;
+    const dd = parseInt(m[1],10);
+    const mm = parseInt(m[2],10)-1;
+    const yy = parseInt(m[3],10);
+    const d = new Date(yy, mm, dd, 23, 59, 59);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  function hoy(){
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+  }
+  function isCompletado(estatus){
+    return String(estatus||"").toLowerCase().includes("complet");
+  }
+  function isVencido(row, estatus){
+    const d = parseFechaDDMMYYYY(row.Fecha_Limite);
+    if(!d) return false;
+    if(isCompletado(estatus)) return false;
+    return d.getTime() < hoy().getTime();
+  }
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  async function fetchExcel(){
+    for(const file of XLSX_FILE_CANDIDATES){
+      try{
+        const res = await fetch(file);
+        if(!res.ok) continue;
+        const buf = await res.arrayBuffer();
+        const wb = XLSX.read(buf, {type:"array"});
+        const sheet = wb.Sheets["BASE GENERAL"];
+        if(!sheet) throw new Error("No existe hoja BASE GENERAL");
+        const json = XLSX.utils.sheet_to_json(sheet, {defval:""});
+        // id estable por orden
+        DATA = json.map((r, idx) => ({__id: idx+1, ...r}));
+
+        // áreas
+        const a = Array.from(new Set(DATA.map(r => String(r["Área"]||"").trim()).filter(Boolean)));
+        // orden institucional (como tú lo pediste)
+        const orden = [
+          "Dirección de Planeación Institucional",
+          "Departamento de Planeación y Proyectos",
+          "Departamento de Seguimiento y Evaluación",
+          "Departamento de Capacitación e Investigación",
+          "Departamento de Desarrollo Institucional"
+        ];
+        AREAS = orden.filter(x => a.includes(x));
+
+        // plataformas
+        PLATAFORMAS = Array.from(new Set(DATA.map(r => String(r["Sistema_Plataforma"]||"").trim()).filter(Boolean))).sort();
+
+        // meses
+        const meses = Array.from(new Set(DATA.map(r => String(r["Mes"]||"").trim()).filter(Boolean)));
+        const mesesOrdenados = MESES_ORDEN.filter(m => meses.includes(m));
+        selMes.innerHTML = mesesOrdenados.map(m => `<option value="${m}">${m}</option>`).join("");
+        // año
+        const anios = Array.from(new Set(DATA.map(r => String(r["Año"]||"").trim()).filter(Boolean))).sort();
+        selAnio.innerHTML = anios.map(y => `<option value="${y}">${y}</option>`).join("");
+
+        // default mes actual si existe
+        const mesNow = MESES_ORDEN[new Date().getMonth()];
+        if(mesesOrdenados.includes(mesNow)) selMes.value = mesNow;
+
+        // botones áreas
+        areaBtns.innerHTML = AREAS.map(a => `<button class="btn" data-area="${escapeHtml(a)}">${escapeHtml(a === "Dirección de Planeación Institucional" ? "Dirección de Planeación" : a)}</button>`).join("");
+        document.querySelectorAll(".btn[data-area]").forEach(b=>{
+          b.addEventListener("click", ()=>{
+            AREA_ACTUAL = b.getAttribute("data-area");
+            lblArea.innerHTML = `<strong>${escapeHtml(AREA_ACTUAL)}</strong>`;
+            panelTabla.style.display = "block";
+            renderTabla();
+            renderKPIs();
+            panelTabla.scrollIntoView({behavior:"smooth", block:"start"});
+          });
+        });
+
+        // listeners filtros
+        selMes.addEventListener("change", ()=>{ renderTabla(); renderKPIs(); });
+        selAnio.addEventListener("change", ()=>{ renderTabla(); renderKPIs(); });
+
+        renderKPIs();
+        return;
+      }catch(e){ /* intenta siguiente */ }
+    }
+
+    alert("No pude cargar el Excel. Verifica que el archivo se llame exactamente: Control_Reportes_SEDIF_2025.xlsx");
+  }
+
+  function filasMesAnio(){
+    const mes = selMes.value;
+    const anio = selAnio.value;
+    return DATA.filter(r => String(r["Mes"]||"").trim()===mes && String(r["Año"]||"").trim()===anio);
+  }
+
+  function renderKPIs(){
+    const mes = selMes.value;
+    const anio = selAnio.value;
+    const rows = filasMesAnio();
+
+    let comp=0, pend=0, venc=0;
+    for(const r of rows){
+      const saved = getSavedRow(r.__id);
+      const estatus = saved?.estatus || String(r["Estatus"]||"Pendiente") || "Pendiente";
+      if(isCompletado(estatus)) comp++; else pend++;
+      if(isVencido(r, estatus)) venc++;
+    }
+
+    kpiCompletados.textContent = comp;
+    kpiPendientes.textContent = pend;
+    kpiVencidos.textContent = venc;
+    kpiMes.textContent = `${mes} / ${anio}`;
+  }
+
+  function renderTabla(){
+    if(!AREA_ACTUAL){ return; }
+
+    const mes = selMes.value;
+    const anio = selAnio.value;
+
+    const rows = DATA
+      .filter(r => String(r["Mes"]||"").trim()===mes)
+      .filter(r => String(r["Año"]||"").trim()===anio)
+      .filter(r => String(r["Área"]||"").trim()===String(AREA_ACTUAL).trim());
+
+    subtituloTabla.textContent = `${AREA_ACTUAL} · ${mes} · ${anio} · Registros: ${rows.length}`;
+
+    tbody.innerHTML = rows.map(r=>{
+      const saved = getSavedRow(r.__id);
+      const estatus = saved?.estatus || String(r["Estatus"]||"Pendiente") || "Pendiente";
+      const linkVerif = saved?.linkVerif || "";
+      const plataforma = String(r["Sistema_Plataforma"]||"").trim() || "—";
+      const plataformaUrl = getPlatformUrl(plataforma);
+
+      const vencido = isVencido(r, estatus);
+      const fecha = String(r["Fecha_Limite"]||"—");
+      const badge = vencido ? ` <span class="badge-bad">(Vencido)</span>` : "";
+
+      return `
+        <tr>
+          <td>
+            <div style="font-weight:900">${escapeHtml(r["Actividad"]||"—")}</div>
+            <div class="mini">${escapeHtml(r["Nivel_Gobierno"]||"")}</div>
+          </td>
+          <td>${escapeHtml(r["Tipo_Reporte"]||"—")}</td>
+          <td>
+            <div style="font-weight:900">${escapeHtml(plataforma)}</div>
+            <div class="mini">Impacto: ${escapeHtml(r["Impacto"]||"")}</div>
+          </td>
+          <td>${escapeHtml(r["Periodicidad"]||"—")}</td>
+          <td>${escapeHtml(fecha)}${badge}</td>
+
+          <td>
+            <select class="estado" data-id="${r.__id}">
+              <option value="Pendiente" ${String(estatus)==="Pendiente" ? "selected":""}>Pendiente</option>
+              <option value="Completado" ${String(estatus)==="Completado" ? "selected":""}>Completado</option>
+            </select>
+          </td>
+
+          <td>
+            <input class="link linkVerif" data-id="${r.__id}" value="${escapeHtml(linkVerif)}"
+              placeholder="Pega el link de verificación (https://...)" />
+            <div class="mini">Este link es la evidencia del reporte.</div>
+          </td>
+
+          <td>
+            <button class="open" data-plataforma="${escapeHtml(plataforma)}" ${plataformaUrl ? "" : "title='Configura el enlace en el botón de arriba'"} >
+              ${plataformaUrl ? "Abrir" : "Configurar"}
+            </button>
+          </td>
+
+          <td>
+            <button class="save" data-id="${r.__id}">Guardar</button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    // guardar fila
+    tbody.querySelectorAll(".save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id = parseInt(btn.getAttribute("data-id"),10);
+        const est = tbody.querySelector(`.estado[data-id="${id}"]`)?.value || "Pendiente";
+        const link = tbody.querySelector(`.linkVerif[data-id="${id}"]`)?.value.trim() || "";
+        setSavedRow(id, {estatus: est, linkVerif: link, updatedAt: new Date().toISOString()});
+        btn.textContent = "Guardado ✓";
+        setTimeout(()=> btn.textContent="Guardar", 900);
+        renderKPIs();
+        renderTabla();
+      });
+    });
+
+    // abrir plataforma
+    tbody.querySelectorAll(".open").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const p = btn.getAttribute("data-plataforma") || "";
+        const url = getPlatformUrl(p);
+        if(!url){
+          abrirConfig(true);
+          return;
+        }
+        window.open(url, "_blank");
+      });
+    });
+  }
+
+  /***************
+   * 3) Modal configuración plataformas (porque el Excel NO trae URLs)
+   ***************/
+  const modalBack = document.getElementById("modalBack");
+  const modalBody = document.getElementById("modalBody");
+  const btnConfig = document.getElementById("btnConfig");
+  const modalClose = document.getElementById("modalClose");
+  const modalCancel = document.getElementById("modalCancel");
+  const modalSave = document.getElementById("modalSave");
+
+  function abrirConfig(scrollTop=false){
+    modalBody.innerHTML = PLATAFORMAS.map(p=>{
+      const url = getPlatformUrl(p);
+      return `
+        <div class="modalRow">
+          <div><b>${escapeHtml(p)}</b><div class="mini">Enlace a la plataforma (una vez)</div></div>
+          <div><input data-pl="${escapeHtml(p)}" value="${escapeHtml(url)}" placeholder="https://..." style="width:100%"></div>
+        </div>
+      `;
+    }).join("");
+    modalBack.style.display = "flex";
+    if(scrollTop) modalBody.scrollTop = 0;
+  }
+  function cerrarConfig(){ modalBack.style.display="none"; }
+
+  btnConfig.addEventListener("click", ()=>abrirConfig());
+  modalClose.addEventListener("click", cerrarConfig);
+  modalCancel.addEventListener("click", cerrarConfig);
+  modalBack.addEventListener("click", (e)=>{ if(e.target===modalBack) cerrarConfig(); });
+
+  modalSave.addEventListener("click", ()=>{
+    modalBody.querySelectorAll("input[data-pl]").forEach(inp=>{
+      const p = inp.getAttribute("data-pl");
+      const url = inp.value.trim();
+      setPlatformUrl(p, url);
+    });
+    cerrarConfig();
+    renderTabla();
+  });
+
+  // GO
+  fetchExcel();
 </script>
 
 </body>
