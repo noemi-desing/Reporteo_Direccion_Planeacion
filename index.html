@@ -654,6 +654,22 @@ document.getElementById("btnExportExcel")?.addEventListener("click", () => {
 
   XLSX.writeFile(wb, nombre);
 });
+
+// 👇👇👇 AQUÍ VA EL CÓDIGO DE NUBE 👇👇👇
+
+const URL_NUBE = "https://script.google.com/macros/s/AKfycbx....../exec";
+
+function guardarEnNube(data) {
+  fetch(URL_NUBE, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json())
+  .then(res => console.log("Guardado en nube", res))
+  .catch(err => alert("Error al guardar en nube"));
+}
+
 </script>
 </body>
 </html>
