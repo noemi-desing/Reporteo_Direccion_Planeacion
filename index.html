@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sistema de Reporteo – DIF Jalisco</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Lee Excel desde el mismo repositorio (GitHub Pages) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --naranja:#f26a21;
+      --gris:#6b6f73;
+      --fondo:#f4f6f8;
+      --blanco:#ffffff;
+      --borde:#e6e8eb;
+      --sombra:0 2px 10px rgba(0,0,0,.08);
+      --ok:#0b7a2a;
+      --bad:#b91c1c;
+    }
+
+    *{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    body{margin:0;background:var(--fondo);color:#222}
+
+    header{
+      background:var(--blanco);
+      border-bottom:4px solid var(--naranja);
+      padding:16px 20px;
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    header img{height:56px; display:none;}
+    header .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+    header .t h1{margin:0;font-size:20px;color:var(--gris);line-height:1.2}
+    header .t small{color:#555;font-size:13px}
+
+    main{max-width:1200px;margin:0 auto;padding:18px}
+
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .panel{
+      background:var(--blanco);
+      border:1px solid var(--borde);
+      border-radius:12px;
+      box-shadow:var(--sombra);
+      padding:14px;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .kpi{
+      background:var(--blanco);
+      border:1px solid var(--borde);
+      border-radius:12px;
+      box-shadow:var(--sombra);
+      padding:14px;
+      text-align:center;
+    }
+    .kpi .n{font-size:34px;font-weight:900;color:var(--naranja);line-height:1;margin:0}
+    .kpi .l{margin-top:8px;font-weight:800;color:var(--gris)}
+
+    .topbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;background:#fff;border:1px solid var(--borde);
+      border-radius:999px;
+    }
+    select, input{
+      padding:8px 10px;border:1px solid var(--borde);
+      border-radius:10px;background:#fff;
+    }
+    .tag{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;border:1px solid var(--borde);border-radius:999px;
+      background:#fff;font-weight:800;color:var(--gris)
+    }
+    .tag strong{color:#111}
+
+    .btns{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+    .btn{
+      border:none;border-radius:12px;
+      padding:14px 12px;
+      cursor:pointer;
+      background:var(--naranja);
+      color:#fff;
+      font-size:15px;
+      font-weight:900;
+      transition:.15s ease-in-out;
+      text-align:center;
+    }
+    .btn:hover{background:#d85617;transform:translateY(-1px)}
+    .btn:active{transform:translateY(0px)}
+
+    .sub{color:#666;font-size:12px;margin-top:8px}
+
+    .tablaWrap{overflow:auto;border:1px solid var(--borde);border-radius:12px;margin-top:10px}
+    table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;min-width:1100px}
+    thead th{
+      position:sticky;top:0;background:#fff;z-index:2;
+      border-bottom:1px solid var(--borde);
+      padding:10px;text-align:left;font-size:12px;color:var(--gris);white-space:nowrap;
+    }
+    tbody td{border-bottom:1px solid var(--borde);padding:10px;font-size:13px;vertical-align:top}
+    tbody tr:hover td{background:#fafafa}
+
+    .mini{font-size:12px;color:#666;margin-top:2px}
+
+    .estado{width:160px;font-weight:900}
+    .link{width:330px}
+    .save{
+      border:none;border-radius:10px;padding:10px 12px;cursor:pointer;
+      background:var(--gris);color:#fff;font-weight:900;white-space:nowrap;
+    }
+    .save:hover{background:#54575b}
+    .open{
+      border:none;border-radius:10px;padding:10px 12px;cursor:pointer;
+      background:#111;color:#fff;font-weight:900;white-space:nowrap;
+    }
+
+    .badge-ok{color:var(--ok);font-weight:900}
+    .badge-bad{color:var(--bad);font-weight:900}
+
+    .rightActions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .ghost{
+      border:1px solid var(--borde);
+      background:#fff;
+      border-radius:10px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-weight:900;
+      color:var(--gris);
+    }
+    .ghost:hover{border-color:#cfd3d7}
+
+    .modalBack{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.35);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  z-index:9999;
+}
+    .modal{
+      width:min(900px, 100%);
+      background:#fff;border-radius:14px;box-shadow:0 20px 70px rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding:14px 16px;border-bottom:1px solid var(--borde);
+      display:flex;justify-content:space-between;align-items:center;
+    }
+    .modalHead h3{margin:0;color:var(--gris)}
+    .modalBody{padding:14px 16px;max-height:70vh;overflow:auto}
+    .modalRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      padding:10px 0;
+      border-bottom:1px dashed #eee;
+      align-items:center;
+    }
+    .modalRow b{color:#111}
+    .modalFoot{padding:14px 16px;border-top:1px solid var(--borde);display:flex;gap:10px;justify-content:flex-end}
+    .x{border:none;background:transparent;font-size:22px;cursor:pointer;color:#777}
+    /* === ALERTAS VISUALES POR FECHA === */
+tr.vencido td{
+  background:#fde2e2 !important;
+}
+tr.porVencer td{
+  background:#fff4d6 !important;
+}
+tr.enTiempo td{
+  background:#e7f6ec !important;
+}
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+}
+
+.badge-red{background:#b91c1c;color:#fff}
+.badge-orange{background:#f59e0b;color:#fff}
+.badge-green{background:#0b7a2a;color:#fff}
+  </style>
+</head>
+
+<body>
+<header>
+  <img id="logo" alt="DIF Jalisco">
+  <div class="t">
+    <h1>Sistema de Reporteo</h1>
+    <small>Dirección de Planeación Institucional · DIF Jalisco</small>
+  </div>
+</header>
+
+<main>
+
+  <!-- KPIs -->
+  <section class="kpis">
+    <div class="kpi"><p class="n" id="kpiCompletados">0</p><div class="l">Completados (mes)</div></div>
+    <div class="kpi"><p class="n" id="kpiPendientes">0</p><div class="l">Pendientes (mes)</div></div>
+    <div class="kpi"><p class="n" id="kpiVencidos">0</p><div class="l">Vencidos (mes)</div></div>
+    <div class="kpi"><p class="n" id="kpiMes">—</p><div class="l">Mes / Año</div></div>
+  </section>
+
+  <!-- Selección -->
+  <section class="panel">
+    <div class="topbar">
+      <div class="row">
+        <div class="pill">
+          <b style="color:var(--gris)">Mes</b>
+          <select id="selMes"></select>
+        </div>
+
+        <div class="pill">
+          <b style="color:var(--gris)">Año</b>
+          <select id="selAnio"></select>
+        </div>
+
+        <div class="tag">Área: <strong id="lblArea">—</strong></div>
+      </div>
+
+      <div class="rightActions">
+        <button class="ghost" id="btnConfig">Configurar enlaces de plataformas</button>
+      </div>
+    </div>
+
+    <div class="btns" id="areaBtns"></div>
+
+    <div class="sub">
+      • Los botones <b>abren la tabla real</b> del Excel (hoja <b>BASE GENERAL</b>).<br>
+      • El usuario pega el <b>link de verificación</b> (evidencia) después de reportar.
+    </div>
+  </section>
+
+  <!-- Tabla -->
+  <section class="panel" id="panelTabla" style="display:none;margin-top:12px">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-weight:900;color:var(--gris)">Tabla de reporteo</div>
+        <div class="mini" id="subtituloTabla"></div>
+      </div>
+      <div class="mini">Guardado local (este navegador).</div>
+    </div>
+    <button class="ghost" id="btnExportExcel">
+  📤 Exportar a Excel
+</button>
+
+    <div class="tablaWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Actividad</th>
+            <th>Tipo</th>
+            <th>Plataforma</th>
+            <th>Periodicidad</th>
+            <th>Fecha límite</th>
+            <th>Estatus</th>
+            <th>Link de verificación</th>
+            <th>Abrir plataforma</th>
+            <th>Guardar</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer style="text-align:center;font-size:12px;color:#777;padding:18px">
+  Dirección de Planeación Institucional · DIF Jalisco
+</footer>
+
+<div class="modalBack" id="modalBack">
+  <div class="modal">
+    <div class="modalHead">
+      <h3>Configurar enlaces de plataformas</h3>
+      <button class="x" id="modalClose">×</button>
+    </div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot">
+      <button class="ghost" id="modalCancel">Cancelar</button>
+      <button class="btn" id="modalSave" style="padding:10px 14px;border-radius:10px">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* === LOGO === */
+(function loadLogo(){
+  const img=document.getElementById("logo");
+  const src="logo dif.jpg";
+  const t=new Image();
+  t.onload=()=>{img.src=src;img.style.display="block";};
+  t.src=src;
+})();
+
+/* === EXCEL === */
+const XLSX_FILE="Control_Reportes_SEDIF_2025.xlsx";
+const MESES_ORDEN=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const SEXENIO=["2025","2026","2027","2028","2029","2030"];
+
+let DATA=[],PLATAFORMAS=[],AREAS=[],AREA_ACTUAL=null;
+
+const selMes=document.getElementById("selMes");
+const selAnio=document.getElementById("selAnio");
+const lblArea=document.getElementById("lblArea");
+const areaBtns=document.getElementById("areaBtns");
+const panelTabla=document.getElementById("panelTabla");
+const tbody=document.getElementById("tbody");
+const subtituloTabla=document.getElementById("subtituloTabla");
+
+const kpiCompletados=document.getElementById("kpiCompletados");
+const kpiPendientes=document.getElementById("kpiPendientes");
+const kpiVencidos=document.getElementById("kpiVencidos");
+const kpiMes=document.getElementById("kpiMes");
+
+/* === STORAGE === */
+const keyRow=id=>"reporte_row_"+id;
+const keyPlat=n=>"platform_url_"+n;
+
+const getRow=id=>JSON.parse(localStorage.getItem(keyRow(id))||"null");
+const setRow=(id,v)=>localStorage.setItem(keyRow(id),JSON.stringify(v));
+const getPlat=n=>localStorage.getItem(keyPlat(n))||"";
+const setPlat=(n,v)=>localStorage.setItem(keyPlat(n),(v||"").trim());
+
+const esc=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+
+/* =========================================================
+   ✅ ÚNICO CAMBIO: FECHA LÍMITE FORMATEADA (Excel serial -> DD/MM/AAAA)
+   ========================================================= */
+function excelSerialToDate(serial){
+  // Excel (1900 system): days since 1899-12-30
+  const utcDays = serial - 25569;
+  const utcValue = utcDays * 86400 * 1000;
+  const d = new Date(utcValue);
+  // normalizamos a mediodía para evitar brincos de zona horaria
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+}
+
+function formatFechaLimite(valor, targetYear){
+  if(valor === null || valor === undefined || valor === "") return "—";
+
+  let d = null;
+
+  // 1) Número Excel (ej: 45688)
+  if(typeof valor === "number" && isFinite(valor)){
+    d = excelSerialToDate(valor);
+  }
+
+  // 2) String numérico (ej: "45688")
+  if(!d && typeof valor === "string" && valor.trim() !== "" && /^[0-9]+(\.[0-9]+)?$/.test(valor.trim())){
+    const n = Number(valor.trim());
+    if(isFinite(n)) d = excelSerialToDate(n);
+  }
+
+  // 3) String tipo DD/MM/YYYY o DD-MM-YYYY
+  if(!d && typeof valor === "string"){
+    const t = valor.trim().replaceAll("-", "/");
+    const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m){
+      const dd = parseInt(m[1],10);
+      const mm = parseInt(m[2],10)-1;
+      const yy = parseInt(m[3],10);
+      d = new Date(yy, mm, dd, 12, 0, 0);
+    }
+  }
+
+  // Si no se pudo parsear, lo regresamos tal cual
+  if(!d) return String(valor);
+
+  // 👉 Ajusta el año al seleccionado (sexenio), manteniendo día/mes
+  const y = parseInt(String(targetYear||"").trim(), 10);
+  if(!Number.isNaN(y)) d.setFullYear(y);
+
+  return d.toLocaleDateString("es-MX"); // DD/MM/AAAA
+}
+
+const parseFecha=(s, targetYear)=>{
+  // ahora parseFecha usa la misma lógica de formatFechaLimite para poder comparar vencidos
+  if(s === null || s === undefined || s === "") return null;
+
+  let d = null;
+
+  if(typeof s === "number" && isFinite(s)){
+    d = excelSerialToDate(s);
+  }
+  if(!d && typeof s === "string" && s.trim() !== "" && /^[0-9]+(\.[0-9]+)?$/.test(s.trim())){
+    const n = Number(s.trim());
+    if(isFinite(n)) d = excelSerialToDate(n);
+  }
+  if(!d && typeof s === "string"){
+    const t = s.trim().replaceAll("-", "/");
+    const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m){
+      d = new Date(+m[3], +m[2]-1, +m[1], 12, 0, 0);
+    }
+  }
+
+  if(!d) return null;
+
+  const y = parseInt(String(targetYear||"").trim(), 10);
+  if(!Number.isNaN(y)) d.setFullYear(y);
+
+  // fin de día para vencidos
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+};
+
+const hoy=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);};
+const isComp=e=>String(e||"").toLowerCase().includes("complet");
+const isVenc=(r,e)=>{
+  const v = (r && (r["Fecha_Limite"] ?? r.Fecha_Limite));
+  const f = parseFecha(v, selAnio.value);
+  return f && !isComp(e) && f < hoy();
+};
+
+/* === MODAL config plataformas (se queda igual) === */
+const modalBack=document.getElementById("modalBack");
+const modalBody=document.getElementById("modalBody");
+const btnConfig=document.getElementById("btnConfig");
+const modalClose=document.getElementById("modalClose");
+const modalCancel=document.getElementById("modalCancel");
+const modalSave=document.getElementById("modalSave");
+
+function abrirConfig(){
+  modalBody.innerHTML = PLATAFORMAS.map(p=>{
+    const url=getPlat(p);
+    return `
+      <div class="modalRow">
+        <div><b>${esc(p)}</b><div class="mini">Enlace a la plataforma (una vez)</div></div>
+        <div><input data-pl="${esc(p)}" value="${esc(url)}" placeholder="https://..." style="width:100%"></div>
+      </div>
+    `;
+  }).join("");
+  modalBack.style.display="flex";
+}
+function cerrarConfig(){ modalBack.style.display="none"; }
+
+btnConfig.addEventListener("click", abrirConfig);
+modalClose.addEventListener("click", cerrarConfig);
+modalCancel.addEventListener("click", cerrarConfig);
+modalBack.addEventListener("click", (e)=>{ if(e.target===modalBack) cerrarConfig(); });
+
+modalSave.addEventListener("click", ()=>{
+  modalBody.querySelectorAll("input[data-pl]").forEach(inp=>{
+    const p=inp.getAttribute("data-pl");
+    const url=inp.value.trim();
+    setPlat(p,url);
+  });
+  cerrarConfig();
+  render();
+});
+
+/* === CARGA EXCEL === */
+async function loadExcel(){
+  const r=await fetch(XLSX_FILE);
+  const b=await r.arrayBuffer();
+  const wb=XLSX.read(b,{type:"array"});
+  const sh=wb.Sheets["BASE GENERAL"];
+  DATA=XLSX.utils.sheet_to_json(sh,{defval:""}).map((r,i)=>({__id:i+1,...r}));
+
+  selMes.innerHTML=MESES_ORDEN.map(m=>`<option>${m}</option>`).join("");
+  selAnio.innerHTML=SEXENIO.map(a=>`<option>${a}</option>`).join("");
+  selAnio.value="2025";
+
+  const orden=[
+    "Dirección de Planeación Institucional",
+    "Departamento de Planeación y Proyectos",
+    "Departamento de Seguimiento y Evaluación",
+    "Departamento de Capacitación e Investigación",
+    "Departamento de Desarrollo Institucional"
+  ];
+  AREAS=orden.filter(a=>DATA.some(r=>r["Área"]===a));
+
+  areaBtns.innerHTML=AREAS.map(a=>`<button class="btn" data-a="${a}">${a==="Dirección de Planeación Institucional"?"Dirección de Planeación":a}</button>`).join("");
+
+  document.querySelectorAll(".btn[data-a]").forEach(b=>b.onclick=()=>{
+    AREA_ACTUAL=b.dataset.a;
+    lblArea.innerHTML=`<strong>${AREA_ACTUAL}</strong>`;
+    panelTabla.style.display="block";
+    render();
+  });
+
+  // plataformas (se queda igual)
+  PLATAFORMAS = Array.from(new Set(DATA.map(r => String(r["Sistema_Plataforma"]||"").trim()).filter(Boolean))).sort();
+
+  selMes.onchange=selAnio.onchange=render;
+  render();
+}
+
+function filas(){
+  const mes=selMes.value;
+  const anio=selAnio.value;
+  const base=DATA.some(r=>String(r["Año"])===anio)?anio:"2025";
+  return DATA.filter(r=>r["Mes"]===mes && String(r["Año"])===base && r["Área"]===AREA_ACTUAL);
+}
+
+function render(){
+  if(!AREA_ACTUAL) return;
+
+  const rows=filas();
+  subtituloTabla.textContent=`${AREA_ACTUAL} · ${selMes.value} · ${selAnio.value} · Registros: ${rows.length}`;
+
+  let c=0,p=0,v=0;
+
+  tbody.innerHTML=rows.map(r=>{
+    const saved = getRow(r.__id);
+    const s = saved?.estatus || r.Estatus || "Pendiente";
+
+    if(isComp(s)) c++; else p++;
+    if(isVenc(r,s)) v++;
+
+    const linkVerif = saved?.linkVerif || "";
+    const plataforma = String(r["Sistema_Plataforma"]||"").trim() || "—";
+    const plataformaUrl = getPlat(plataforma);
+
+    const rawFecha = (r["Fecha_Limite"] ?? r.Fecha_Limite);
+    const fechaBonita = formatFechaLimite(rawFecha, selAnio.value);  // ✅ AQUÍ SE FORMATEA
+
+    return `
+      <tr class="${estadoPorFecha(r['Fecha_Limite'])}">
+        <td><b>${esc(r.Actividad)}</b></td>
+        <td>${esc(r.Tipo_Reporte)}</td>
+        <td>${esc(plataforma)}</td>
+        <td>${esc(r.Periodicidad)}</td>
+
+        <!-- ✅ ÚNICO CAMBIO VISIBLE: Fecha límite bonita -->
+        <td>${esc(fechaBonita)}</td>
+
+        <td>
+          <select class="estado" data-i="${r.__id}">
+            <option ${s==="Pendiente"?"selected":""}>Pendiente</option>
+            <option ${s==="Completado"?"selected":""}>Completado</option>
+          </select>
+        </td>
+
+        <td>
+          <input class="link" data-i="${r.__id}" value="${esc(linkVerif)}" placeholder="Pega el link de verificación (https://...)">
+        </td>
+
+        <td>
+          <button class="open" data-pl="${esc(plataforma)}">
+            ${plataformaUrl ? "Abrir" : "Configurar"}
+          </button>
+        </td>
+
+        <td>
+          <button class="save" data-i="${r.__id}">Guardar</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  kpiCompletados.textContent=c;
+  kpiPendientes.textContent=p;
+  kpiVencidos.textContent=v;
+  kpiMes.textContent=`${selMes.value} / ${selAnio.value}`;
+
+  // guardar (igual)
+ 
+ document.querySelectorAll(".save").forEach(b=>b.onclick=()=>{
+  const id = b.dataset.i;
+  const e = document.querySelector(`.estado[data-i="${id}"]`).value;
+  const l = document.querySelector(`.link[data-i="${id}"]`).value.trim();
+
+  setRow(id,{
+    estatus: e,
+    linkVerif: l,
+    updatedAt: new Date().toISOString()
+  });
+
+  render();
+});
+
+  });
+
+  // abrir plataforma (igual)
+  document.querySelectorAll(".open").forEach(btn=>{
+    btn.onclick=()=>{
+      const p = btn.getAttribute("data-pl") || "";
+      const url = getPlat(p);
+      if(!url){
+        abrirConfig();
+        return;
+      }
+      window.open(url, "_blank");
+    };
+  });
+}
+
+loadExcel();
+  // === SEMÁFORO VISUAL POR FECHA (7 DÍAS) ===
+function estadoPorFecha(fecha){
+  if(!fecha) return "";
+
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+
+  const limite = new Date(fecha);
+  limite.setHours(0,0,0,0);
+
+  const diff = Math.ceil((limite - hoy) / (1000 * 60 * 60 * 24));
+
+  if(diff < 0) return "vencido";
+  if(diff <= 7) return "porVencer";
+  return "";
+}
+
+/* === EXPORTAR A EXCEL (MES / AÑO / ÁREA ACTUAL) === */
+document.getElementById("btnExportExcel")?.addEventListener("click", () => {
+  if (!AREA_ACTUAL) {
+    alert("Selecciona un área primero.");
+    return;
+  }
+
+  const rows = filas();
+  if (!rows.length) {
+    alert("No hay registros para exportar.");
+    return;
+  }
+
+  const data = rows.map(r => {
+    const saved = getRow(r.__id) || {};
+    return {
+      "Área": r["Área"],
+      "Mes": r["Mes"],
+      "Año": r["Año"],
+      "Actividad": r["Actividad"],
+      "Tipo": r["Tipo_Reporte"],
+      "Plataforma": r["Sistema_Plataforma"],
+      "Periodicidad": r["Periodicidad"],
+      "Fecha límite": formatFechaLimite(
+        r["Fecha_Limite"] ?? r.Fecha_Limite,
+        selAnio.value
+      ),
+      "Estatus": saved.estatus || r.Estatus || "Pendiente",
+      "Link verificación": saved.linkVerif || ""
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+
+  const nombre = `Reporte_${AREA_ACTUAL}_${selMes.value}_${selAnio.value}.xlsx`
+    .replaceAll(" ", "_");
+
+  XLSX.writeFile(wb, nombre);
+});
+
+// 👇👇👇 AQUÍ VA EL CÓDIGO DE NUBE 👇👇👇
+
+const URL_NUBE = "https://script.google.com/macros/s/AKfycbx....../exec";
+
+function guardarEnNube(data) {
+  fetch(URL_NUBE, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json())
+  .then(res => console.log("Guardado en nube", res))
+  .catch(err => alert("Error al guardar en nube"));
+}
+
+</script>
+</body>
+</html>
+
+
+
+
