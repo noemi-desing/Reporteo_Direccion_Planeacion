@@ -596,6 +596,23 @@ function render(){
 }
 
 loadExcel();
+  // === SEMÁFORO VISUAL POR FECHA (7 DÍAS) ===
+function estadoPorFecha(fecha){
+  if(!fecha) return "";
+
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+
+  const limite = new Date(fecha);
+  limite.setHours(0,0,0,0);
+
+  const diff = Math.ceil((limite - hoy) / (1000 * 60 * 60 * 24));
+
+  if(diff < 0) return "vencido";
+  if(diff <= 7) return "porVencer";
+  return "";
+}
+
 /* === EXPORTAR A EXCEL (MES / AÑO / ÁREA ACTUAL) === */
 document.getElementById("btnExportExcel")?.addEventListener("click", () => {
   if (!AREA_ACTUAL) {
