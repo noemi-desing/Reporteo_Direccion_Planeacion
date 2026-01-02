@@ -2,137 +2,161 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Sistema de Reporteo - Dirección de Planeación Institucional</title>
+  <title>Sistema de Reporteo – Dirección de Planeación Institucional</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f8;
-      color: #333;
+    :root{
+      --naranja:#f26a21;
+      --gris:#6b6f73;
+      --fondo:#f4f6f8;
+    }
+    *{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    body{margin:0;background:var(--fondo);color:#333}
+
+    header{
+      background:#fff;
+      padding:15px 30px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom:4px solid var(--naranja);
+    }
+    header img{height:55px}
+    header h1{
+      margin:0;
+      text-align:center;
+      color:var(--gris);
+      font-size:20px;
+      line-height:1.3;
+      flex:1;
     }
 
-    header {
-      background-color: #ffffff;
-      border-bottom: 4px solid #9b1c31;
-      padding: 15px 30px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+    main{max-width:1200px;margin:auto;padding:30px}
 
-    header img {
-      height: 60px;
+    .indicadores{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:20px;
+      margin-bottom:40px;
     }
-
-    header h1 {
-      font-size: 20px;
-      text-align: center;
-      margin: 0;
-      flex: 1;
-      color: #9b1c31;
+    .card{
+      background:#fff;
+      border-radius:10px;
+      padding:22px;
+      text-align:center;
+      box-shadow:0 2px 6px rgba(0,0,0,.1);
     }
+    .card h2{margin:0;font-size:32px;color:var(--naranja)}
+    .card p{margin-top:10px;font-weight:bold;color:var(--gris)}
 
-    main {
-      padding: 30px;
+    h3{color:var(--gris);margin-bottom:20px}
+
+    .botones{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:20px;
     }
-
-    .indicadores {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-bottom: 40px;
+    .btn{
+      background:var(--naranja);
+      color:#fff;
+      border:none;
+      border-radius:12px;
+      padding:22px;
+      font-size:16px;
+      cursor:pointer;
+      transition:.3s;
     }
+    .btn:hover{background:#d85617;transform:translateY(-2px)}
 
-    .card {
-      background: white;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    .card h2 {
-      margin: 0;
-      font-size: 28px;
-      color: #9b1c31;
-    }
-
-    .card p {
-      margin: 10px 0 0;
-      font-weight: bold;
-    }
-
-    .departamentos {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-    }
-
-    .btn-depto {
-      background-color: #9b1c31;
-      color: white;
-      border: none;
-      padding: 25px;
-      font-size: 18px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-
-    .btn-depto:hover {
-      background-color: #7a1626;
-    }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 12px;
-      color: #777;
+    footer{
+      margin-top:50px;
+      padding:20px;
+      text-align:center;
+      font-size:12px;
+      color:#777;
     }
   </style>
 </head>
 
 <body>
 
-  <header>
-    <img src="logotipo diferente.jpg" alt="DIP Jalisco">
-    <h1>Sistema de Reporteo<br>Dirección de Planeación Institucional</h1>
-    <img src="logotipo diferente.jpg" alt="Gobierno de Jalisco">
-  </header>
+<header>
+  <img src="logo dif.jpg" alt="DIP Jalisco">
+  <h1>
+    Sistema de Reporteo<br>
+    Dirección de Planeación Institucional
+  </h1>
+  <img src="logo dif.jpg" alt="Gobierno de Jalisco">
+</header>
 
-  <main>
+<main>
 
-    <section class="indicadores">
-      <div class="card">
-        <h2>0</h2>
-        <p>Reportes Completados</p>
-      </div>
-      <div class="card">
-        <h2>0</h2>
-        <p>Reportes Pendientes</p>
-      </div>
-      <div class="card">
-        <h2>0</h2>
-        <p>Reportes Vencidos</p>
-      </div>
-      <div class="card">
-        <h2>Mes Actual</h2>
-        <p>En curso</p>
-      </div>
-    </section>
+  <!-- INDICADORES GENERALES (se alimentan del control de fichas) -->
+  <section class="indicadores">
+    <div class="card">
+      <h2>0</h2>
+      <p>Reportes Completados</p>
+    </div>
+    <div class="card">
+      <h2>0</h2>
+      <p>Reportes Pendientes</p>
+    </div>
+    <div class="card">
+      <h2>0</h2>
+      <p>Reportes Vencidos</p>
+    </div>
+    <div class="card">
+      <h2>Mes Actual</h2>
+      <p>En curso</p>
+    </div>
+  </section>
 
-    <section class="departamentos">
-      <button class="btn-depto">Planeación</button>
-      <button class="btn-depto">Seguimiento y Evaluación</button>
-    </section>
+  <!-- BOTONES POR ÁREA (derivados de la base de datos) -->
+  <h3>Selecciona tu área para realizar el reporteo</h3>
 
-  </main>
+  <section class="botones">
+    <button class="btn" onclick="abrir('Dirección de Planeación')">
+      Dirección de Planeación
+    </button>
 
-  <footer>
-    Dirección de Planeación Institucional · DIP Jalisco
-  </footer>
+    <button class="btn" onclick="abrir('Planeación y Proyectos')">
+      Departamento de Planeación y Proyectos
+    </button>
+
+    <button class="btn" onclick="abrir('Seguimiento y Evaluación')">
+      Departamento de Seguimiento y Evaluación
+    </button>
+
+    <button class="btn" onclick="abrir('Capacitación e Investigación')">
+      Departamento de Capacitación e Investigación
+    </button>
+
+    <button class="btn" onclick="abrir('Desarrollo Institucional')">
+      Departamento de Desarrollo Institucional
+    </button>
+  </section>
+
+</main>
+
+<footer>
+  Dirección de Planeación Institucional · DIP Jalisco
+</footer>
+
+<script>
+  function abrir(area){
+    alert(
+      "Área: " + area + "\n\n" +
+      "Aquí se mostrará:\n" +
+      "• Tipo de reporteo\n" +
+      "• Ficha correspondiente\n" +
+      "• Periodicidad (cuándo)\n" +
+      "• Plataforma (dónde reportar)\n\n" +
+      "Toda la lógica viene de la base de datos."
+    );
+  }
+</script>
 
 </body>
 </html>
+
