@@ -534,7 +534,7 @@ function render(){
     const fechaBonita = formatFechaLimite(rawFecha, selAnio.value);  // ✅ AQUÍ SE FORMATEA
 
     return `
-      <tr>
+      <tr class="${estadoPorFecha(r['Fecha_Limite'])}">
         <td><b>${esc(r.Actividad)}</b></td>
         <td>${esc(r.Tipo_Reporte)}</td>
         <td>${esc(plataforma)}</td>
