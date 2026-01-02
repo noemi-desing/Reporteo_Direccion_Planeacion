@@ -573,12 +573,28 @@ function render(){
   kpiMes.textContent=`${selMes.value} / ${selAnio.value}`;
 
   // guardar (igual)
-  document.querySelectorAll(".save").forEach(b=>b.onclick=()=>{
-    const id=b.dataset.i;
-    const e=document.querySelector(`.estado[data-i="${id}"]`).value;
-    const l=document.querySelector(`.link[data-i="${id}"]`).value.trim();
-    setRow(id,{estatus:e,linkVerif:l,updatedAt:new Date().toISOString()});
-    render();
+ 
+ document.querySelectorAll(".save").forEach(b=>b.onclick=()=>{
+  const id = b.dataset.i;
+  const e = document.querySelector(`.estado[data-i="${id}"]`).value;
+  const l = document.querySelector(`.link[data-i="${id}"]`).value.trim();
+
+  setRow(id,{
+    estatus: e,
+    linkVerif: l,
+    updatedAt: new Date().toISOString()
+  });
+
+  // 👉 GUARDA EN GOOGLE SHEETS (NUBE)
+  guardarEnNube({
+    ID_Registro: id,
+    Estatus: e,
+"Link verificación": l
+  });
+
+  render();
+});
+
   });
 
   // abrir plataforma (igual)
